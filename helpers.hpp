@@ -10,7 +10,7 @@ private:
 public:
 	inline void start() {
 		t1 = std::chrono::system_clock::now();
-	} 
+	}
 	inline double stop() {
 		auto t2 = std::chrono::system_clock::now();
 		return std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -23,7 +23,7 @@ inline cv::Mat cropImage(cv::Mat img, cv::Rect r) {
 	if (dx > 0) { r.x = 0; }
 	r.width -= dx;
 	int dy = std::abs(std::min(0, r.y));
-	if (dy > 0) { r.y = 0; }	
+	if (dy > 0) { r.y = 0; }
 	r.height -= dy;
 	int dw = std::abs(std::min(0, img.cols - 1 - (r.x + r.width)));
 	r.width -= dw;
@@ -37,13 +37,14 @@ inline cv::Mat cropImage(cv::Mat img, cv::Rect r) {
 
 inline void drawAndShowFace(cv::Mat img, cv::Rect r, const std::vector<cv::Point>& pts) {
 	cv::Mat outImg;
+	//std::cout << "draw " << pts.size() << " elems." << std::endl;
 	img.convertTo(outImg, CV_8UC3);
 	cv::rectangle(outImg, r, cv::Scalar(0, 0, 255));
 	for (size_t i = 0; i < pts.size(); ++i) {
-		cv::circle(outImg, pts[i], 3, cv::Scalar(0, 0, 255));
+		cv::circle(outImg, pts[i], 3, cv::Scalar(0, 255, 0));
 	}
 	cv::imshow("test", outImg);
-	cv::waitKey(0);
+	//cv::waitKey(0);
 }
 
 #endif //_HELPERS_HPP_
