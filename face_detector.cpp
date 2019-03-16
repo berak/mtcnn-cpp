@@ -35,9 +35,7 @@ FaceDetector::FaceDetector(const std::string& modelDir,
 							float pThreshold,
 							float rThreshold,
 							float oThreshold,
-							bool useLNet,
-							bool useGPU,
-							int deviceID) : pThreshold_(pThreshold),
+							bool useLNet) : pThreshold_(pThreshold),
 											rThreshold_(rThreshold),
 											oThreshold_(oThreshold),
 											useLNet_(useLNet) {
@@ -63,9 +61,11 @@ std::vector<Face> FaceDetector::detect(cv::Mat img, float minFaceSize, float sca
 	rgbImg.convertTo(rgbImg, CV_32FC3);
 	rgbImg = rgbImg.t();
 	std::vector<Face> faces = step1(rgbImg, minFaceSize, scaleFactor);
-	faces = step2(rgbImg, faces);
-	faces = step3(rgbImg, faces);
-	if (useLNet_) {
+	if (faces.size() > 0)
+		faces = step2(rgbImg, faces);
+	if (faces.size() > 0)
+		faces = step3(rgbImg, faces);
+	if (useLNet_ && (faces.size() > 0)) {
 		faces = step4(rgbImg, faces);
 	}
 	for (size_t i = 0; i < faces.size(); ++i) {
@@ -132,7 +132,6 @@ std::vector<Face> FaceDetector::step1(cv::Mat img, float minFaceSize, float scal
 		}
 		faceSize /= scaleFactor;
 	}
-	//std::cout << " final " << finalFaces.size() << std::endl;
 	finalFaces = FaceDetector::nonMaximumSuppression(finalFaces, 0.7f);
 	Face::applyRegression(finalFaces, false);
 	Face::bboxes2Squares(finalFaces);
@@ -227,11 +226,38 @@ std::vector<Face> FaceDetector::step4(cv::Mat img, const std::vector<Face>& face
 			samples.push_back(sample);
 			patches.push_back(patch);
 		}
-		initNetInput(lNet_, samples);
-		cv::Mat regressionBlob = lNet_.forward();
+		cv::Mat b = cv::dnn::blobFromImages(samples, IMG_INV_STDDEV, cv::Size(), cv::Scalar::all(IMG_MEAN),false,false);
+		int s2[4] {1,15,24,24};
+		cv::Mat inputBlob = b.reshape(1,4,s2);
+
+		lNet_.setInput(inputBlob);
+
+	    /*cv::dnn::MatShape ms1 { inputBlob.size[0], inputBlob.size[1] , inputBlob.size[2], inputBlob.size[3] };
+	    size_t nlayers = lNet_.getLayerNames().size() + 1;        // one off for the hidden input layer
+	    for (size_t l=0; l<nlayers; l++) {
+	        std::vector<cv::dnn::MatShape> in,out;
+	        lNet_.getLayerShapes(ms1,l,in,out);
+	        cv::Ptr<cv::dnn::Layer> lyr = lNet_.getLayer((unsigned)l);
+	        cout << cv::format("%4d %-38s %-13s ", l, (l==0?"data":lyr->name.c_str()), (l==0?"Input":lyr->type.c_str()));
+	        for (auto j:in)  cout << "i" << cv::Mat(j).t() << "  "; // input(s) size
+	        for (auto j:out) cout << "o" << cv::Mat(j).t() << "  "; // output(s) size
+	        for (auto b:lyr->blobs) {                           // what the net trains on, e.g. weights and bias
+	            cout << "b[" << b.size[0];
+	            for (size_t d=1; d<b.dims; d++) cout << ", " << b.size[d];
+	            cout << "]  ";
+	        }
+	        cout << endl;
+	    }*/
+
+		std::vector<cv::String> names = lNet_.getUnconnectedOutLayersNames();
+		std::vector<cv::Mat> outs;
+
+		lNet_.forward(outs,names);
+
+		CV_Assert(outs.size()==NUM_PTS);
 		Face face = faces[i];
 		for (int p = 0; p < NUM_PTS; ++p) {
-			const float* regressionData = regressionBlob.ptr<float>(0,0,p);
+			const float* regressionData = outs[p].ptr<float>();
 			float dx = regressionData[1];
 			float dy = regressionData[0];
 			if (std::abs(dx - 0.5f) < L_THRESHOLD && std::abs(dy - 0.5f) < L_THRESHOLD) {

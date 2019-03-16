@@ -33,11 +33,7 @@ struct Face {
 
 class FaceDetector {
 private:
-	/*boost::shared_ptr< caffe::Net<float> > pNet_;
-	boost::shared_ptr< caffe::Net<float> > rNet_;
-	boost::shared_ptr< caffe::Net<float> > oNet_;
-	boost::shared_ptr< caffe::Net<float> > lNet_;
-	*/
+
 	cv::dnn::Net pNet_,rNet_,oNet_,lNet_;
 
 	float pThreshold_;
@@ -59,9 +55,8 @@ public:
 				 float pThreshold = 0.6f,
 				 float rThreshold = 0.7f,
 				 float oThreshold = 0.7f,
-				 bool useLNet = true,
-				 bool useGPU = false,
-				 int deviceID = 0);
+				 bool useLNet = true);
+
 	std::vector<Face> detect(cv::Mat img, float minFaceSize, float scaleFactor);
 };
 
