@@ -205,7 +205,6 @@ std::vector<Face> FaceDetector::step3(cv::Mat img, const std::vector<Face>& face
 	return finalFaces;
 }
 
-bool once=true;
 std::vector<Face> FaceDetector::step4(cv::Mat img, const std::vector<Face>& faces) {
 	PROFILE;
 	std::vector<Face> finalFaces;
@@ -233,67 +232,10 @@ std::vector<Face> FaceDetector::step4(cv::Mat img, const std::vector<Face>& face
 
 		lNet_.setInput(inputBlob);
 
-	    /*cv::dnn::MatShape ms1 { inputBlob.size[0], inputBlob.size[1] , inputBlob.size[2], inputBlob.size[3] };
-	    size_t nlayers = lNet_.getLayerNames().size() + 1;        // one off for the hidden input layer
-	    for (size_t l=0; l<nlayers; l++) {
-	        std::vector<cv::dnn::MatShape> in,out;
-	        lNet_.getLayerShapes(ms1,l,in,out);
-	        cv::Ptr<cv::dnn::Layer> lyr = lNet_.getLayer((unsigned)l);
-	        cout << cv::format("%4d %-38s %-13s ", l, (l==0?"data":lyr->name.c_str()), (l==0?"Input":lyr->type.c_str()));
-	        for (auto j:in)  cout << "i" << cv::Mat(j).t() << "  "; // input(s) size
-	        for (auto j:out) cout << "o" << cv::Mat(j).t() << "  "; // output(s) size
-	        for (auto b:lyr->blobs) {                           // what the net trains on, e.g. weights and bias
-	            cout << "b[" << b.size[0];
-	            for (size_t d=1; d<b.dims; d++) cout << ", " << b.size[d];
-	            cout << "]  ";
-	        }
-	        cout << endl;
-	    }*/
-
 		std::vector<cv::String> names = lNet_.getUnconnectedOutLayersNames();
 		std::vector<cv::Mat> outs;
 
 		lNet_.forward(outs,names);
-
-if (once) {
-	once=false;
-    dnn::MatShape ms1 { inputBlob.size[0], inputBlob.size[1] , inputBlob.size[2], inputBlob.size[3] };
-    size_t nlayers = lNet_.getLayerNames().size() + 1;        // one off for the hidden input layer
-    cout << "graph dnn {\nnode[minlen=.4, fontsize=8, fontname=\"Arial\", height=.2, width=.5, shape=box];\n" << endl;
-    for (size_t i=0; i<nlayers; i++) {
-        Ptr<dnn::Layer> lyr = lNet_.getLayer((unsigned)i);
-        std::vector<dnn::MatShape> in,out;
-        lNet_.getLayerShapes(ms1,i,in,out);
-        int id = lNet_.getLayerId(lyr->name);
-        std::stringstream inf;
-        for (auto j:in)  inf << "i" << Mat(j).t() << "\n"; // input(s) size
-        for (auto j:out) inf << "o" << Mat(j).t() << "\n"; // output(s) size
-        if (1) {
-            for (auto b:lyr->blobs) {                           // what the net trains on, e.g. weights and bias
-                inf << "w[" << b.size[0];
-                for (size_t d=1; d<b.dims; d++) inf << ", " << b.size[d];
-                inf << "]\n";
-            }
-        }
-        String lbl = "";
-        if (1) {
-            lbl = (lyr->type.empty()?"input":lyr->type) + "\n";
-        }
-        if (1) {
-            cout << "\"" << (lyr->name.empty()?"data":lyr->name);
-            cout << "\"[label=\"" << lbl ;
-            cout << (lyr->name.empty()?"data":lyr->name) << "\n";
-            cout << inf.str();
-            cout << "\"];" << endl;
-        }
-        if (id>=0) {
-            std::vector<Ptr<dnn::Layer> > inp = lNet_.getLayerInputs(id);
-            for (auto k:inp) cout << "\"" << (k->name.empty()?"data":k->name) << "\" -- \"" << lyr->name << "\"" <<endl;
-        }
-    }
-    cout << "}" << endl;
-}
-
 
 		CV_Assert(outs.size()==NUM_PTS);
 		Face face = faces[i];
